@@ -67,6 +67,7 @@ def _build_excel_path(months):
 
 
 @app.route("/health")
+@app.route("/api/index/health")
 def health():
     return jsonify({"status": "ok", "jira_configured": bool(config.JIRA_API_TOKEN)})
 
@@ -74,6 +75,8 @@ def health():
 @app.route("/")
 @app.route("/api")
 @app.route("/api/")
+@app.route("/api/index")
+@app.route("/api/index/")
 def dashboard():
     try:
         excel_path = _build_excel_path(DEFAULT_MONTHS)
@@ -91,6 +94,7 @@ def dashboard():
 
 @app.route("/excel")
 @app.route("/api/excel")
+@app.route("/api/index/excel")
 def excel():
     try:
         excel_path = _build_excel_path(DEFAULT_MONTHS)
