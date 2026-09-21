@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Indicadores DAPL — Painel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg: #0b1220;
+  --panel: #111a2c;
+  --panel-2: #0e1626;
+  --line: #223049;
+  --line-soft: #1a2439;
+  --text: #e7ecf5;
+  --text-dim: #93a2bd;
+  --text-faint: #5d6c89;
+  --accent: #5eead4;
+  --accent-dim: #1f4d47;
+  --amber: #f5b562;
+  --coral: #f28b82;
+  --violet: #b3a4f0;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+  --radius: 10px;
+}
+:root:not([data-theme="light"]) { }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]){
+    --bg: #f4f6fb;
+    --panel: #ffffff;
+    --panel-2: #eef1f8;
+    --line: #dde3ef;
+    --line-soft: #e7ebf3;
+    --text: #131b2c;
+    --text-dim: #56637d;
+    --text-faint: #94a0b8;
+    --accent: #0f9c8a;
+    --accent-dim: #d7f3ee;
+    --amber: #b5730a;
+    --coral: #c0392b;
+    --violet: #6a5acd;
+  }
+}
+:root[data-theme="light"]{
+  --bg: #f4f6fb;
+  --panel: #ffffff;
+  --panel-2: #eef1f8;
+  --line: #dde3ef;
+  --line-soft: #e7ebf3;
+  --text: #131b2c;
+  --text-dim: #56637d;
+  --text-faint: #94a0b8;
+  --accent: #0f9c8a;
+  --accent-dim: #d7f3ee;
+  --amber: #b5730a;
+  --coral: #c0392b;
+  --violet: #6a5acd;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--font-body);
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{ max-width:1240px; margin:0 auto; padding:32px 24px 80px; }
+
+/* ---------- Header ---------- */
+header.top{
+  display:flex; align-items:flex-end; justify-content:space-between;
+  gap:24px; flex-wrap:wrap; margin-bottom:28px;
+  border-bottom:1px solid var(--line); padding-bottom:20px;
+}
+.title-block .eyebrow{
+  font-family:var(--font-mono); font-size:12px; letter-spacing:.04em;
+  color:var(--accent); margin:0 0 6px;
+}
+.title-block h1{
+  font-family:var(--font-display); font-weight:700; font-size:30px;
+  margin:0 0 4px; letter-spacing:-.01em;
+}
+.title-block p{ margin:0; color:var(--text-dim); font-size:14px; max-width:520px; }
+
+.month-tabs{ display:flex; gap:4px; background:var(--panel-2); border:1px solid var(--line); border-radius:999px; padding:4px; }
+.month-tabs button{
+  appearance:none; border:none; background:transparent; color:var(--text-dim);
+  font-family:var(--font-mono); font-size:12.5px; padding:8px 16px; border-radius:999px;
+  cursor:pointer; transition:background .15s, color .15s;
+}
+.month-tabs button.active{ background:var(--accent); color:#04211c; font-weight:600; }
+.month-tabs button:not(.active):hover{ color:var(--text); }
+
+/* ---------- KPI grid ---------- */
+.kpi-grid{
+  display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; margin-bottom:24px;
+}
+@media (max-width: 900px){ .kpi-grid{ grid-template-columns:repeat(2,1fr);} }
+@media (max-width: 560px){ .kpi-grid{ grid-template-columns:1fr;} }
+
+.kpi-card{
+  background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+  padding:16px 18px; cursor:pointer; transition:border-color .15s, transform .1s;
+  position:relative; overflow:hidden;
+}
+.kpi-card:hover{ border-color:var(--accent); }
+.kpi-card.selected{ border-color:var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.kpi-card .label{ font-size:12px; color:var(--text-dim); margin-bottom:10px; line-height:1.35; min-height:32px; }
+.kpi-card .value{ font-family:var(--font-mono); font-size:26px; font-weight:600; letter-spacing:-.01em; }
+.kpi-card .value.dim{ color:var(--text-faint); font-size:15px; font-weight:500; font-family:var(--font-body); }
+.kpi-card .delta{ font-family:var(--font-mono); font-size:11.5px; margin-top:6px; }
+.delta.up{ color:var(--accent); }
+.delta.down{ color:var(--coral); }
+.delta.flat{ color:var(--text-faint); }
+
+/* ---------- Panels ---------- */
+.panel{
+  background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+  padding:20px 22px; margin-bottom:20px;
+}
+.panel h2{
+  font-family:var(--font-display); font-size:16px; margin:0 0 2px; font-weight:600;
+}
+.panel .sub{ font-size:12.5px; color:var(--text-dim); margin:0 0 16px; }
+
+.two-col{ display:grid; grid-template-columns: 1.3fr 1fr; gap:20px; }
+@media (max-width: 900px){ .two-col{ grid-template-columns:1fr; } }
+
+canvas{ max-width:100%; }
+
+/* ---------- legend / mini stats ---------- */
+.mini-list{ display:flex; flex-direction:column; gap:10px; }
+.mini-row{ display:flex; align-items:center; justify-content:space-between; font-size:13px; padding:8px 0; border-bottom:1px solid var(--line-soft); }
+.mini-row:last-child{ border-bottom:none; }
+.mini-row .name{ display:flex; align-items:center; gap:8px; color:var(--text-dim); }
+.dot{ width:8px; height:8px; border-radius:50%; flex:none; }
+.mini-row .num{ font-family:var(--font-mono); font-weight:600; }
+
+/* ---------- Filters ---------- */
+.filters{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px; }
+.filters select, .filters input[type="text"]{
+  background:var(--panel-2); border:1px solid var(--line); color:var(--text);
+  font-family:var(--font-body); font-size:12.5px; padding:8px 10px; border-radius:7px;
+  min-width:140px;
+}
+.filters input[type="text"]{ min-width:220px; }
+.filters .count{ margin-left:auto; font-family:var(--font-mono); font-size:12px; color:var(--text-faint); align-self:center; }
+
+/* ---------- Table ---------- */
+.table-scroll{ overflow-x:auto; border:1px solid var(--line); border-radius:8px; }
+table{ width:100%; border-collapse:collapse; font-size:12.5px; min-width:920px; }
+thead th{
+  text-align:left; font-family:var(--font-mono); font-weight:500; font-size:11px;
+  color:var(--text-faint); text-transform:none; letter-spacing:.02em;
+  padding:10px 12px; background:var(--panel-2); border-bottom:1px solid var(--line);
+  cursor:pointer; white-space:nowrap; position:sticky; top:0;
+}
+thead th:hover{ color:var(--text); }
+thead th .arrow{ opacity:.5; margin-left:4px; }
+tbody td{ padding:9px 12px; border-bottom:1px solid var(--line-soft); vertical-align:top; }
+tbody tr:last-child td{ border-bottom:none; }
+tbody tr:hover{ background:var(--panel-2); }
+td.key{ font-family:var(--font-mono); color:var(--accent); white-space:nowrap; }
+td.num{ font-family:var(--font-mono); text-align:right; white-space:nowrap; }
+.badge{
+  display:inline-block; padding:2px 7px; border-radius:5px; font-size:10.5px;
+  font-family:var(--font-mono); border:1px solid var(--line);
+}
+.badge.b-aceito{ color:var(--accent); border-color:var(--accent-dim); background:var(--accent-dim);}
+.badge.b-andamento{ color:var(--amber); border-color:#4a3418; background:rgba(245,181,98,.1);}
+.badge.b-concluido{ color:var(--violet); border-color:#3a3462; background:rgba(179,164,240,.1);}
+.flagpill{ display:inline-block; font-family:var(--font-mono); font-size:10px; padding:1px 6px; border-radius:4px; margin:1px 2px 1px 0; border:1px solid var(--line); color:var(--text-dim); }
+.warn{ color:var(--coral); font-family:var(--font-mono); font-size:11px; }
+
+footer{ text-align:center; color:var(--text-faint); font-size:11.5px; margin-top:32px; font-family:var(--font-mono); }
+footer a{ color:var(--text-faint); }
+
+.empty{ padding:40px; text-align:center; color:var(--text-faint); font-size:13px; }
+
+/* ---------- Matrix (Geral) table ---------- */
+#matrixTable{ min-width:0; }
+#matrixTable thead th{ position:static; }
+#matrixTable thead th.month-col{ text-align:right; font-family:var(--font-mono); font-size:12px; color:var(--text); }
+#matrixTable td.indicator{ color:var(--text); font-size:13px; max-width:340px; }
+#matrixTable td.indicator .concept{ display:block; color:var(--text-faint); font-size:11.5px; font-weight:400; margin-top:4px; line-height:1.45; font-family:var(--font-body); }
+#matrixTable td.mval{ font-family:var(--font-mono); font-size:14px; text-align:right; font-weight:600; }
+#matrixTable td.mval.empty-val{ color:var(--text-faint); font-weight:400; font-size:12.5px; }
+#matrixTable tbody tr.section-break td{ padding-top:20px; }
+.row-click{ cursor:pointer; }
+.row-click:hover td.indicator{ color:var(--accent); }
+
+/* ---------- view toggle (Por card / Por responsável) ---------- */
+.view-toggle{ display:flex; gap:4px; background:var(--panel-2); border:1px solid var(--line); border-radius:999px; padding:4px; flex:none; }
+.view-toggle button{
+  appearance:none; border:none; background:transparent; color:var(--text-dim);
+  font-family:var(--font-mono); font-size:12px; padding:7px 14px; border-radius:999px;
+  cursor:pointer; white-space:nowrap;
+}
+.view-toggle button.active{ background:var(--accent); color:#04211c; font-weight:600; }
+
+/* ---------- owner (DPO) table ---------- */
+td.owner-name{ font-weight:600; color:var(--text); }
+td.owner-name .sub-count{ display:block; font-weight:400; color:var(--text-faint); font-size:11px; margin-top:2px; }
+.status-mini{ display:flex; gap:6px; flex-wrap:wrap; }
+.status-mini span{ font-family:var(--font-mono); font-size:10.5px; color:var(--text-dim); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="title-block">
+      <p class="eyebrow">PRODUTOS DE DADOS · DAPL</p>
+      <h1>Painel de Indicadores</h1>
+      <p>Volume, mix e tempos de ciclo do board DAPL — navegue por mês e explore a lista completa de cards por trás de cada número.</p>
+    </div>
+    <div class="month-tabs" id="monthTabs"></div>
+  </header>
+
+  <!-- ===== GERAL: matrix view (indicador × mês), mirrors the Excel "KPIs Mensais" sheet ===== -->
+  <section class="panel" id="matrixPanel" style="display:none;">
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+      <div>
+        <h2 id="matrixTitle">Indicadores mensais</h2>
+        <p class="sub" id="matrixSub">Mesma leitura da aba "KPIs Mensais" do Excel — cada indicador, lado a lado por mês.</p>
+      </div>
+      <div class="view-toggle" id="geralToggle">
+        <button data-view="month" class="active">Por mês</button>
+        <button data-view="owner">Por responsável (DPO)</button>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table id="matrixTable">
+        <thead><tr id="matrixHead"></tr></thead>
+        <tbody id="matrixBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===== Per-month view: KPI cards + trend + drill-down table ===== -->
+  <div id="monthView">
+    <section class="kpi-grid" id="kpiGrid"></section>
+
+    <section class="panel">
+      <div class="two-col">
+        <div>
+          <h2>Total de demandas por mês</h2>
+          <p class="sub">Contagem de cards com <span style="font-family:var(--font-mono)">Mês de Referência</span> igual ao mês selecionado.</p>
+          <canvas id="trendChart" height="230"></canvas>
+        </div>
+        <div>
+          <h2>Mix de times no mês</h2>
+          <p class="sub" id="mixSub">Participação de cada flag de time nas demandas do mês.</p>
+          <div class="mini-list" id="mixList"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+        <div>
+          <h2 id="tableTitle">Cards do mês selecionado</h2>
+          <p class="sub" id="tableSub">Clique nos cabeçalhos para ordenar. Use os filtros para refinar por time, status ou tipo.</p>
+        </div>
+        <div class="view-toggle" id="viewToggle">
+          <button data-view="cards" class="active">Por card</button>
+          <button data-view="owner">Por responsável (DPO)</button>
+        </div>
+      </div>
+      <div class="filters" id="cardFilters">
+        <select id="fTeam">
+          <option value="">Todos os times</option>
+          <option value="DENA">Engenharia (DENA)</option>
+          <option value="DDPL">Plataforma (DDPL)</option>
+          <option value="DCOD">DataViz (DCOD)</option>
+          <option value="DGOD">Governança (DGOD)</option>
+        </select>
+        <select id="fStatus">
+          <option value="">Todos os status</option>
+        </select>
+        <select id="fCategoria">
+          <option value="">Todas as categorias</option>
+          <option value="NOVO">Novo Produto de Dados</option>
+          <option value="EVOLUCAO">Evolução</option>
+        </select>
+        <input type="text" id="fSearch" placeholder="Buscar chave, resumo ou responsável…">
+        <span class="count" id="rowCount"></span>
+      </div>
+      <div class="table-scroll">
+        <table id="dataTable">
+          <thead><tr id="tableHead"></tr></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <footer>Indicadores_DAPL_Consolidado.xlsx · gerado a partir da aba "Indicadores DAPL" e "KPIs Mensais"</footer>
+</div>
+
+<script id="payload-data" type="application/json">__PAYLOAD_JSON__</script>
+<script>__DASHBOARD_JS__</script>
+</body>
+</html>
